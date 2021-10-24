@@ -53,6 +53,13 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
+    //==============================================================================
+    //How to attach everything needed to control DSP (working tree the JUCE framework uses to manage
+    //Audio process's entire state
+    static juce::AudioProcessorValueTreeState::ParameterLayout createParamerterLayout();
+    juce::AudioProcessorValueTreeState apvts {*this, nullptr, "Parameters", createParamerterLayout()};
+    //==============================================================================
+
 private:
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SimpleEQAudioProcessor)

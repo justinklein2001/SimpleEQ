@@ -95,6 +95,7 @@ void SimpleEQAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlo
 {
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
+
 }
 
 void SimpleEQAudioProcessor::releaseResources()
@@ -166,7 +167,8 @@ bool SimpleEQAudioProcessor::hasEditor() const
 
 juce::AudioProcessorEditor* SimpleEQAudioProcessor::createEditor()
 {
-    return new SimpleEQAudioProcessorEditor (*this);
+    //return new SimpleEQAudioProcessorEditor (*this);
+    return new juce::GenericAudioProcessorEditor(*this);
 }
 
 //==============================================================================
@@ -177,12 +179,65 @@ void SimpleEQAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     // as intermediaries to make it easy to save and load complex data.
 }
 
+
 void SimpleEQAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     // You should use this method to restore your parameters from this memory block,
     // whose contents will have been created by the getStateInformation() call.
 }
 
+
+//==============================================================================
+// Setting the parameters for the main driver function to take in data, such as
+// initializing the low cut, mid and peak frequency editors
+//==============================================================================
+juce::AudioProcessorValueTreeState::ParameterLayout
+SimpleEQAudioProcessor::createParamerterLayout() 
+{   
+    //tree state that holds all the data needed for functionality,
+    //requires a pattern layout to be mapped to it, which is what 
+    //this function is doing
+    juce::AudioProcessorValueTreeState::ParameterLayout layout;
+
+    //adding the low frequency information to parameters
+    //params: id, name, normal range for audio, default range (chosen based on determined human range of hearing, start at lowest)
+    layout.add(std::make_unique<juce::AudioParameterFloat>("LowCut Freq", "LowCut Freq", juce::NormalisableRange<float>(20.f, 2000.f, 1.f, 1.f), 20.f));
+
+    //adding the high frequency information to parameters
+    //params: id, name, normal range for audio, default range (chosen based on determined human range of hearing, start at highest)
+    layout.add(std::make_unique<juce::AudioParameterFloat>("HighCut Freq", "HighCut Freq", juce::NormalisableRange<float>(20.f, 2000.f, 1.f, 1.f), 20000.f));
+
+    //adding the peak frequency information to parameters
+    //params: id, name, normal range for audio, default range (chosen based on determined human range of hearing, start at middle)
+    layout.add(std::make_unique<juce::AudioParameterFloat>("Peak Freq", "Peak Freq", juce::NormalisableRange<float>(20.f, 2000.f, 1.f, 1.f), 750.f));
+
+    //adding the peak gain information to parameters
+    //params: id, name, normal range for audio, default range (chosen based on determined human range of hearing, start at nothing as we wan't no gain increase until touched)
+    layout.add(std::make_unique<juce::AudioParameterFloat>("Peak Gain", "Peak Gain", juce::NormalisableRange<float>(-24.f, 24.f, 0.5f, 1.f), 0.0f));
+
+    //adding the peak quality information to parameters
+    //params: id, name, normal range for audio, default range (chosen based on determined human range of hearing, start at 1 as we wan't no gain increase until touched)
+    layout.add(std::make_unique<juce::AudioParameterFloat>("Peak Quality", "Peak Quality", juce::NormalisableRange<float>(0.1f, 10.f, 0.05f, 1.f), 1.0f));
+
+    //To create the pass filters, we need to give it a string 
+    //array with multiple choices to adhere to, giving it a range
+    //to cut frequencies in multiples of 12 db/octave
+    juce::StringArray stringArray;
+    for (int i = 0; i < 4; i++) {
+        juce::String str;
+        str << (12 + (i * 12));
+        str << "db/Oct";
+        stringArray.add(str);
+    }
+    //add the lowcut slope feeding it the "randomized" string array
+    layout.add(std::make_unique<juce::AudioParameterChoice>("LowCut Slope", "Lowcut Slope", stringArray, 0));
+
+    //add the Highcut slope feeding it the "randomized" string array
+    layout.add(std::make_unique<juce::AudioParameterChoice>("HighCut Slope", "HighCut Slope", stringArray, 0));
+    
+    return layout;
+
+}
 //==============================================================================
 // This creates new instances of the plugin..
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
