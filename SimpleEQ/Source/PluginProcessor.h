@@ -10,6 +10,15 @@
 
 #include <JuceHeader.h>
 
+struct ChainSettings
+{
+    float peakFreq{ 0 }, peakGainInDecibels{ 0 }, peakQuality{ 1.f };
+    float lowCutFreq{ 0 }, highCutFreq{ 0 };
+    int lowCutSlope{ 0 }, highCutSlope{ 0 };
+};
+
+ChainSettings getChainSettings(juce::AudioProcessorValueTreeState& apvts);
+
 //==============================================================================
 /**
 */
@@ -62,5 +71,27 @@ public:
 
 private:
     //==============================================================================
+    //we want to build a stereo plugin but the juce framework only processes mono, so we have to have duplicate code,
+    //the framework uses a lot of metadata nested functions so to avoid headaches we declare some aliases for heavily used variables here
+    //==============================================================================
+    
+    using Filter = juce::dsp::IIR::Filter<float>;
+    //we need 4 filter options for cut parameters, the way juce wants us to use this is via a Processor Chain (like when you chain effects in a DAW)
+    using CutFilter = juce::dsp::ProcessorChain<Filter, Filter, Filter, Filter>;
+
+    using MonoChain = juce::dsp::ProcessorChain<CutFilter, Filter, CutFilter>;
+    
+    //declaring two for stereo
+    MonoChain leftChain, rightChain;
+
+    enum ChainPositions
+    {
+        LowCut,
+        Peak,
+        HighCut
+    };
+
+    //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SimpleEQAudioProcessor)
+
 };
